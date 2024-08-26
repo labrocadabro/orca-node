@@ -87,7 +87,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       this.logger.error(error.stderr);
     }
   }
-  async create(podId, imageUrl, userEnvVariables, internalEnvVariables) {
+  async create(podId, imageUrl, internalEnvVariables, userEnvVariables = []) {
     const inVol = `${podId}-in`;
     const outVol = `${podId}-out`;
     const userContainerName = `user-${podId}`;

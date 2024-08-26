@@ -27,76 +27,48 @@ const registerPodLifecycleHandlers = (
   } else {
     orcaPrivateUrl = `ws://${privateHost}`;
   }
-  socket.on('orcaPulse:init', (payload) => {
-    const { podImageUrl, podId, orcaUrl, podSpec } = payload;
-    if (podSpec) {
-      cmClient.exists(podId).then((isPodAvailable) => {
-        if (isPodAvailable) {
-          logger.log(
-            `Pod with podId#${podId} already exists, skipped creation.`,
-          );
-        } else {
-          cmClient.createByPodSpec(podSpec);
-        }
-      });
-    } else {
-      cmClient.imageUrlValid(podImageUrl).then((isImageUrlValid) => {
-        if (isImageUrlValid) {
-          cmClient.imageExist(podImageUrl).then((isImageExist) => {
-            if (isImageExist) {
-              logger.log(
-                `Image with imageUrl#"${podImageUrl}" already exists, skipped pulling.`,
-              );
-              cmClient.exists(podId).then((isPodAvailable) => {
-                if (isPodAvailable) {
-                  logger.log(
-                    `Pod with podId#${podId} already exists, skipped creation.`,
-                  );
-                } else {
-                  cmClient.create(
-                    podId,
-                    podImageUrl,
-                    [],
-                    [
-                      `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
-                      `ORCA_POD_ID=${podId}`,
-                      `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
-                    ],
-                  );
-                }
-              });
-            } else {
-              cmClient.imagePull(podImageUrl).then((res) => {
-                cmClient.create(
-                  podId,
-                  podImageUrl,
-                  [],
-                  [
-                    `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
-                    `ORCA_POD_ID=${podId}`,
-                    `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
-                  ],
-                );
-              });
-            }
-          });
-        } else {
-          logger.error(
-            `User container imageURL #${podImageUrl} is not valid, It should be start with registry domainName or "localhost" when image is in the localhost registry`,
-          );
-        }
-      });
+  socket.on('orcaPulse:init', async (payload) => {
+    const { podImageUrl, podId, podSpec } = payload;
+    const podExists = cmClient.exists(podId);
+    if (podExists) {
+      logger.log(`Pod with pod id ${podId} already exists, skipped creation.`);
+      return;
     }
-    socket.on('disconnect', (reason) => {
-      logger.log('logging POD Id on disconnect', podId);
-      logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
-      if (reason == 'client namespace disconnect') {
-        logger.log(
-          `orca - pulse client successfuly  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
-        );
-        cmClient.delete(podId);
-      }
-    });
+    if (podSpec) {
+      logger.log('Creating pod with podSpec');
+      cmClient.createByPodSpec(podSpec);
+      return;
+    }
+    const validImage = await cmClient.imageUrlValid(podImageUrl);
+    if (!validImage) {
+      logger.error(
+        `${podImageUrl} is not valid. It should start with the registry domain name or "localhost" if the image is in the localhost registry`,
+      );
+      return;
+    }
+    const imageExists = await cmClient.imageExist(podImageUrl);
+    if (imageExists) {
+      logger.log(`${podImageUrl} image already exists, skipped pulling.`);
+    } else {
+      logger.log(`Pulling image from ${podImageUrl}`);
+      await cmClient.imagePull(podImageUrl);
+    }
+    await cmClient.create(podId, podImageUrl, [
+      `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
+      `ORCA_POD_ID=${podId}`,
+      `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
+    ]);
+    logger.log(`Pod with podId#${podId} created successfully.`);
+  });
+  socket.on('disconnect', (reason) => {
+    logger.log('logging POD Id on disconnect', podId);
+    logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
+    if (reason == 'client namespace disconnect') {
+      logger.log(
+        `orca - pulse client successfuly  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
+      );
+      cmClient.delete(podId);
+    }
   });
 };
 exports.registerPodLifecycleHandlers = registerPodLifecycleHandlers;
