@@ -31,25 +31,22 @@ const child_process = require('child_process');
 const util = require('util');
 const logger_service_1 = require('../logger/logger.service');
 const exec = util.promisify(child_process.exec);
-function execSync(cmdstr) {
-  try {
-    const stdout = child_process.execSync(cmdstr);
-  } catch (error) {
-    console.error(error);
-  }
-}
+const execSync = child_process.execSync;
+
 let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   constructor(logger) {
     this.logger = logger;
   }
   async exists(podId) {
     try {
-      const { stdout, stderr } = await exec(`podman pod exists ${podId}`);
+      await exec(`podman pod exists ${podId}`);
+      this.logger.log(stdout);
       return true;
     } catch (error) {
       if (Number(error.code) == 1) {
         return false;
       }
+      throw error;
     }
   }
   async imageUrlValid(imageUrl) {
@@ -72,15 +69,20 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   }
   async imageExist(imageUrl) {
     try {
-      const { stdout, stderr } = await exec(`podman image inspect ${imageUrl}`);
+      await exec(`podman image inspect ${imageUrl}`);
+      this.logger.log(stdout);
       return true;
     } catch (error) {
-      return false;
+      if (Number(error.code) == 125) {
+        return false;
+      }
+      throw error;
     }
   }
   async imagePull(imageUrl) {
     try {
-      const { stdout, stderr } = await exec(`podman pull ${imageUrl}`);
+      const { stdout } = await exec(`podman pull ${imageUrl}`);
+      this.logger.log(stdout);
     } catch (error) {
       this.logger.error(error.stderr);
     }
@@ -100,7 +102,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       .join(' ');
     const pulseProxyContainerCommand = `podman run -d --restart=always --pod new:${podId} -v ${inVol}:/in:Z,U -v ${outVol}:/out --pull always --network slirp4netns:allow_host_loopback=true  --name=${pulseProxyContainerName} ${pulseProxyEnvVariables}  ${pulseProxyImageUrl}`;
     try {
-      const { stdout, stderr } = await exec(pulseProxyContainerCommand);
+      const { stdout } = await exec(pulseProxyContainerCommand);
       await exec(userContainerCommand);
       this.logger.log(stdout);
     } catch (error) {
@@ -109,7 +111,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   }
   async createByPodSpec(podSpec) {
     try {
-      const { stdout, stderr } = await exec(
+      const { stdout } = await exec(
         `echo "${podSpec}" | podman play kube --network slirp4netns:allow_host_loopback=true -`,
       );
       this.logger.log(stdout);
@@ -123,10 +125,10 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const podRmCommand = `podman pod rm -a`;
     const volumePruneCommand = `podman volume prune -f`;
     try {
-      await execSync(podStopCommand);
-      await execSync(podPruneCommand);
-      await execSync(podRmCommand);
-      await execSync(volumePruneCommand);
+      execSync(podStopCommand);
+      execSync(podPruneCommand);
+      execSync(podRmCommand);
+      execSync(volumePruneCommand);
     } catch (error) {
       this.logger.error(error.stderr);
     }
@@ -137,10 +139,10 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const volumeInRmCommand = `podman volume rm ${podId}-in`;
     const volumeOutRmCommand = `podman volume rm ${podId}-out`;
     try {
-      await execSync(podStopCommand);
-      await execSync(podRmCommand);
-      await execSync(volumeInRmCommand);
-      await execSync(volumeOutRmCommand);
+      execSync(podStopCommand);
+      execSync(podRmCommand);
+      execSync(volumeInRmCommand);
+      execSync(volumeOutRmCommand);
     } catch (error) {
       this.logger.error(error.stderr);
     }
