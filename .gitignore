@@ -2,3 +2,5 @@ node_modules
 .DS_Store
 .env
 modified
+package-lock.json
+yarn.lock
