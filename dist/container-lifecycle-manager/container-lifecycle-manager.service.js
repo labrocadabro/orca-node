@@ -43,13 +43,14 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       this.logger.log(stdout);
       return true;
     } catch (error) {
+      this.logger.error(error.stderr);
       if (Number(error.code) == 1) {
         return false;
       }
       throw error;
     }
   }
-  async imageUrlValid(imageUrl) {
+  imageUrlValid(imageUrl) {
     const hostnameRegexStr =
       '((([-a-z0-9]{1,63}\\.)*?[a-z0-9]([-a-z0-9]{0,253}[a-z0-9])?\\.[a-z]{2,63})|((\\d{1,3}\\.){3}\\d{1,3}))(:\\d{1,5})?((\\/|\\?)((%[0-9a-f]{2})|[-\\w\\+\\.\\?\\/@~#&=])*)?$';
     const hostnameRegex = new RegExp(hostnameRegexStr);
@@ -67,15 +68,26 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       return false;
     }
   }
-  async imageExist(imageUrl) {
+  async getImageDigest(imageUrl) {
     try {
-      await exec(`podman image inspect ${imageUrl}`);
+      const { stdout } = await exec(
+        `podman image inspect ${imageUrl} --format '{{.Digest}}'`,
+      );
       this.logger.log(stdout);
-      return true;
+      return stdout;
     } catch (error) {
-      if (Number(error.code) == 125) {
-        return false;
-      }
+      this.logger.error(error.stderr);
+    }
+  }
+  async isImageUnchanged(imageDigest, imageUrl) {
+    try {
+      await exec(`podman pull --quiet ${imageUrl}`);
+      const { stdout } = await exec(
+        `podman image inspect ${imageUrl} --format '{{.Digest}}'`,
+      );
+      return stdout === imageDigest;
+    } catch (error) {
+      this.logger.error(error.stderr);
       throw error;
     }
   }
@@ -94,6 +106,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const userEnvVariableString = userEnvVariables
       .map((v) => `-e ${v}`)
       .join(' ');
+
     const userContainerCommand = `podman run -d --restart=always --pod ${podId} -v ${inVol}:/in -v ${outVol}:/out:Z,U --pull always --name=${userContainerName} ${userEnvVariableString} ${imageUrl}`;
     const pulseProxyContainerName = `pulse-proxy-${podId}`;
     const pulseProxyImageUrl = 'docker.io/orcacompute/pulse-proxy:main';
@@ -145,6 +158,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       execSync(volumeOutRmCommand);
     } catch (error) {
       this.logger.error(error.stderr);
+      throw error;
     }
   }
 };

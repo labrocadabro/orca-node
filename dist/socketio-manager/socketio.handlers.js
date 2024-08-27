@@ -28,44 +28,66 @@ const registerPodLifecycleHandlers = (
     orcaPrivateUrl = `ws://${privateHost}`;
   }
   socket.on('orcaPulse:init', async (payload) => {
-    const { podImageUrl, podId, podSpec } = payload;
-    const podExists = cmClient.exists(podId);
-    if (podExists) {
-      logger.log(`Pod with pod id ${podId} already exists, skipped creation.`);
-      return;
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const { podImageUrl, podId, podSpec } = payload;
+        const podExists = await cmClient.exists(podId);
+        if (podExists) {
+          logger.log(
+            `Pod with pod id ${podId} already exists, skipped creation.`,
+          );
+          return;
+        }
+        if (podSpec) {
+          logger.log('Creating pod with podSpec');
+          await cmClient.createByPodSpec(podSpec);
+          return;
+        }
+        const validImage = cmClient.imageUrlValid(podImageUrl);
+        if (!validImage) {
+          logger.error(
+            `${podImageUrl} is not valid. It should start with the registry domain name or "localhost" if the image is in the localhost registry`,
+          );
+          return;
+        }
+        const imageDigest = await cmClient.getImageDigest(podImageUrl);
+        if (
+          imageDigest &&
+          (await cmClient.isImageUnchanged(imageDigest, podImageUrl))
+        ) {
+          logger.log(`${podImageUrl} image already exists, skipped pulling.`);
+        } else {
+          logger.log(`Pulling image from ${podImageUrl}`);
+          await cmClient.imagePull(podImageUrl);
+        }
+        await cmClient.create(podId, podImageUrl, [
+          `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
+          `ORCA_POD_ID=${podId}`,
+          `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
+        ]);
+        logger.log(`Pod with podId#${podId} created successfully.`);
+        return;
+      } catch (error) {
+        logger.error(error);
+        try {
+          if (await cmClient.exists(podId)) {
+            await cmClient.delete(podId);
+          }
+        } catch (error) {
+          logger.error(error);
+          return;
+        }
+        retries--;
+      }
     }
-    if (podSpec) {
-      logger.log('Creating pod with podSpec');
-      cmClient.createByPodSpec(podSpec);
-      return;
-    }
-    const validImage = await cmClient.imageUrlValid(podImageUrl);
-    if (!validImage) {
-      logger.error(
-        `${podImageUrl} is not valid. It should start with the registry domain name or "localhost" if the image is in the localhost registry`,
-      );
-      return;
-    }
-    const imageExists = await cmClient.imageExist(podImageUrl);
-    if (imageExists) {
-      logger.log(`${podImageUrl} image already exists, skipped pulling.`);
-    } else {
-      logger.log(`Pulling image from ${podImageUrl}`);
-      await cmClient.imagePull(podImageUrl);
-    }
-    await cmClient.create(podId, podImageUrl, [
-      `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
-      `ORCA_POD_ID=${podId}`,
-      `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
-    ]);
-    logger.log(`Pod with podId#${podId} created successfully.`);
   });
   socket.on('disconnect', (reason) => {
     logger.log('logging POD Id on disconnect', podId);
     logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
     if (reason == 'client namespace disconnect') {
       logger.log(
-        `orca - pulse client successfuly  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
+        `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
       );
       cmClient.delete(podId);
     }
@@ -75,7 +97,7 @@ exports.registerPodLifecycleHandlers = registerPodLifecycleHandlers;
 const registerPulseProxyHandlers = (io, socket, logger) => {
   socket.on('pulse_proxy:init_success', (payload) => {
     logger.log(
-      `[Pulse proxy]: initialization successfull for Pod Id: ${payload.podId} `,
+      `[Pulse proxy]: initialization successful for Pod Id: ${payload.podId} `,
     );
     const verifyMessage = 'verification message from orca';
     socket.emit('pulse_proxy:verify_connection', verifyMessage);
