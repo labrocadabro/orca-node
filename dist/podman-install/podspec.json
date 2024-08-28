@@ -1,0 +1,16 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": { "name": "hello-world" },
+  "spec": {
+    "containers": [
+      {
+        "name": "hello-world",
+        "image": "docker.io/labrocadabro/private:orca-hello-world",
+        "volumeMounts": [{ "name": "my-volume", "mountPath": "/data" }],
+        "ports": [{ "containerPort": 8080, "hostPort": 5000 }]
+      }
+    ],
+    "volumes": [{ "name": "my-volume", "hostPath": { "path": "/data" } }]
+  }
+}
