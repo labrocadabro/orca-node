@@ -28,7 +28,7 @@ const registerPodLifecycleHandlers = (
     orcaPrivateUrl = `ws://${privateHost}`;
   }
   socket.on('orcaPulse:init', (payload) => {
-    const { podImageUrl, podId, orcaUrl, podSpec } = payload;
+    const { podImageUrl, podId, podSpec } = payload;
     if (podSpec) {
       cmClient.exists(podId).then((isPodAvailable) => {
         if (isPodAvailable) {
@@ -36,6 +36,8 @@ const registerPodLifecycleHandlers = (
             `Pod with podId#${podId} already exists, skipped creation.`,
           );
         } else {
+          logger.log('Creating pod with podSpec');
+          logger.log(podSpec);
           cmClient.createByPodSpec(podSpec);
         }
       });
@@ -53,6 +55,7 @@ const registerPodLifecycleHandlers = (
                     `Pod with podId#${podId} already exists, skipped creation.`,
                   );
                 } else {
+                  logger.log(`Creating pod with imageUrl#${podImageUrl}`);
                   cmClient.create(
                     podId,
                     podImageUrl,
@@ -66,6 +69,7 @@ const registerPodLifecycleHandlers = (
                 }
               });
             } else {
+              logger.log(`Pulling image with imageUrl#${podImageUrl}`);
               cmClient.imagePull(podImageUrl).then((res) => {
                 cmClient.create(
                   podId,
