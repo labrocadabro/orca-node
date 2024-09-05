@@ -96,7 +96,7 @@ const registerPodLifecycleHandlers = (
       logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
       if (reason == 'client namespace disconnect') {
         logger.log(
-          `orca - pulse client successfuly  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
+          `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
         );
         cmClient.delete(podId);
       }
@@ -107,7 +107,7 @@ exports.registerPodLifecycleHandlers = registerPodLifecycleHandlers;
 const registerPulseProxyHandlers = (io, socket, logger) => {
   socket.on('pulse_proxy:init_success', (payload) => {
     logger.log(
-      `[Pulse proxy]: initialization successfull for Pod Id: ${payload.podId} `,
+      `[Pulse proxy]: initialization successful for Pod Id: ${payload.podId} `,
     );
     const verifyMessage = 'verification message from orca';
     socket.emit('pulse_proxy:verify_connection', verifyMessage);
