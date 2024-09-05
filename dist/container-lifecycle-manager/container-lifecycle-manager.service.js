@@ -67,13 +67,27 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       return false;
     }
   }
-  async imageExist(imageUrl) {
+  async getImageDigest(imageUrl) {
     try {
-      const { stdout } = await exec(`podman image inspect ${imageUrl}`);
+      const { stdout } = await exec(
+        `podman image inspect ${imageUrl} --format '{{.Digest}}'`,
+      );
       this.logger.log(stdout);
-      return true;
+      return stdout;
     } catch (error) {
-      return false;
+      this.logger.error(error.stderr);
+    }
+  }
+  async isImageUnchanged(imageDigest, imageUrl) {
+    try {
+      await exec(`podman pull --quiet ${imageUrl}`);
+      const { stdout } = await exec(
+        `podman image inspect ${imageUrl} --format '{{.Digest}}'`,
+      );
+      return stdout === imageDigest;
+    } catch (error) {
+      this.logger.error(error.stderr);
+      throw error;
     }
   }
   async imagePull(imageUrl) {
