@@ -21,7 +21,7 @@ const rpcCallHandlers = async (io, socket) => {
     try {
       receiverSocket.emit('rpc:request', rpcRequest);
     } catch (error) {
-      console.log('reciever not connected');
+      console.log('receiver not connected');
     }
   });
   socket.on('rpc:response', (rpcResponse) => {
@@ -33,7 +33,7 @@ const rpcCallHandlers = async (io, socket) => {
     try {
       receiverSocket.emit('rpc:response', rpcResponse);
     } catch (error) {
-      console.log('reciever not connected', receiverSocket);
+      console.log('receiver not connected', receiverSocket);
     }
   });
   ss(socket).on('rpc:request:stream', (stream, rpcRequest) => {
