@@ -39,7 +39,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   }
   async exists(podId) {
     try {
-      await exec(`podman pod exists ${podId}`);
+      const { stdout } = await exec(`podman pod exists ${podId}`);
       this.logger.log(stdout);
       return true;
     } catch (error) {
@@ -69,14 +69,11 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   }
   async imageExist(imageUrl) {
     try {
-      await exec(`podman image inspect ${imageUrl}`);
+      const { stdout } = await exec(`podman image inspect ${imageUrl}`);
       this.logger.log(stdout);
       return true;
     } catch (error) {
-      if (Number(error.code) == 125) {
-        return false;
-      }
-      throw error;
+      return false;
     }
   }
   async imagePull(imageUrl) {
