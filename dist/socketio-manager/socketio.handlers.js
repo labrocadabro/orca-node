@@ -8,9 +8,7 @@ exports.orphanHandler =
 const socketio_manager_service_1 = require('./socketio-manager.service');
 const socketio_manager_service_2 = require('./socketio-manager.service');
 const socketio_manager_service_3 = require('./socketio-manager.service');
-const util = require('util');
-const child_process = require('child_process');
-const exec = util.promisify(child_process.exec);
+const jsYaml = require('js-yaml');
 const registerPodLifecycleHandlers = (
   io,
   socket,
@@ -32,7 +30,8 @@ const registerPodLifecycleHandlers = (
     try {
       const podExists = await cmClient.exists(podId);
       if (podSpec) {
-        podImageUrl = podSpec.spec.containers[0].image;
+        podSpecParsed = jsYaml.load(podSpec);
+        podImageUrl = podSpecParsed.spec.containers[0].image;
       }
       const validImage = cmClient.imageUrlValid(podImageUrl);
       if (!validImage) {
@@ -64,11 +63,19 @@ const registerPodLifecycleHandlers = (
 
       if (podSpec) {
         logger.log('Creating pod with podSpec');
-        await cmClient.createByPodSpec(podSpec, podId, internalEnvVariables);
+        await cmClient.createByPodSpec(podSpec);
         return;
       }
-
-      await cmClient.create(podId, podImageUrl, internalEnvVariables);
+      cmClient.create(
+        podId,
+        podImageUrl,
+        [],
+        [
+          `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
+          `ORCA_POD_ID=${podId}`,
+          `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
+        ],
+      );
       logger.log(`Pod with podId#${podId} created successfully.`);
       return;
     } catch (error) {
