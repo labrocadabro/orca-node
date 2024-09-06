@@ -152,6 +152,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     try {
       execSync(podStopCommand);
       execSync(podRmCommand);
+      // these will fail if the pod was created with a podspec, but that's fine
       execSync(volumeInRmCommand);
       execSync(volumeOutRmCommand);
     } catch (error) {
