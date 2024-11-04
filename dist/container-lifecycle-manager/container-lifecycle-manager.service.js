@@ -98,7 +98,11 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const pulseProxyEnvVariables = internalEnvVariables
       .map((v) => `-e ${v}`)
       .join(' ');
-    const pulseProxyContainerCommand = `podman run -d --restart=always --pod new:${podId} -v ${inVol}:/in:Z,U -v ${outVol}:/out --pull always --network slirp4netns:allow_host_loopback=true  --name=${pulseProxyContainerName} ${pulseProxyEnvVariables}  ${pulseProxyImageUrl}`;
+    const network =
+      process.platform === 'win32'
+        ? 'bridge'
+        : 'slirp4netns:allow_host_loopback=true';
+    const pulseProxyContainerCommand = `podman run -d --restart=always --pod new:${podId} -v ${inVol}:/in:Z,U -v ${outVol}:/out --pull always --network ${network} --name=${pulseProxyContainerName} ${pulseProxyEnvVariables}  ${pulseProxyImageUrl}`;
     try {
       const { stdout, stderr } = await exec(pulseProxyContainerCommand);
       await exec(userContainerCommand);
@@ -109,8 +113,12 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   }
   async createByPodSpec(podSpec) {
     try {
+      const network =
+        process.platform === 'win32'
+          ? 'bridge'
+          : 'slirp4netns:allow_host_loopback=true';
       const { stdout, stderr } = await exec(
-        `echo "${podSpec}" | podman play kube --network slirp4netns:allow_host_loopback=true -`,
+        `echo "${podSpec}" | podman play kube --network ${network} -`,
       );
       this.logger.log(stdout);
     } catch (error) {
