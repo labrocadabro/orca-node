@@ -25,10 +25,10 @@ const registerPodLifecycleHandlers = (
   if (sslEnable) {
     orcaPrivateUrl = `wss://${privateHost}`;
   } else {
-    orcaPrivateUrl = `ws://${privateHost}`;
+    orcaPrivateUrl = `ws://192.168.0.24`;
   }
   socket.on('orcaPulse:init', (payload) => {
-    const { podImageUrl, podId, orcaUrl, podSpec } = payload;
+    const { podImageUrl, podId, podSpec } = payload;
     if (podSpec) {
       cmClient.exists(podId).then((isPodAvailable) => {
         if (isPodAvailable) {
@@ -92,7 +92,7 @@ const registerPodLifecycleHandlers = (
       logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
       if (reason == 'client namespace disconnect') {
         logger.log(
-          `orca - pulse client successfuly  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
+          `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
         );
         cmClient.delete(podId);
       }
@@ -103,7 +103,7 @@ exports.registerPodLifecycleHandlers = registerPodLifecycleHandlers;
 const registerPulseProxyHandlers = (io, socket, logger) => {
   socket.on('pulse_proxy:init_success', (payload) => {
     logger.log(
-      `[Pulse proxy]: initialization successfull for Pod Id: ${payload.podId} `,
+      `[Pulse proxy]: initialization successful for Pod Id: ${payload.podId} `,
     );
     const verifyMessage = 'verification message from orca';
     socket.emit('pulse_proxy:verify_connection', verifyMessage);
@@ -130,6 +130,9 @@ const findRPCSockets = (podId, senderType) => {
       `Invalid connectionType found in socket.data: ${senderType} for podId: ${podId} `,
     );
   }
+  console.log({
+    db: Object.keys(socketio_manager_service_1.DB.sockets[podId]),
+  });
   return {
     senderSocket: socketio_manager_service_1.DB.sockets[podId][senderType],
     receiverSocket: socketio_manager_service_1.DB.sockets[podId][receiverType],
