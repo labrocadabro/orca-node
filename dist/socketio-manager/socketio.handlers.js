@@ -11,6 +11,7 @@ const socketio_manager_service_3 = require('./socketio-manager.service');
 const util = require('util');
 const child_process = require('child_process');
 const exec = util.promisify(child_process.exec);
+const os = require('os');
 const registerPodLifecycleHandlers = (
   io,
   socket,
@@ -21,8 +22,9 @@ const registerPodLifecycleHandlers = (
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
   let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
-  if (process.env === 'win32') {
+  if (process.platform === 'win32') {
     function getHostIp() {
+      console.log('Finding host IP');
       const interfaces = os.networkInterfaces();
       const allowedAdapters = ['ethernet', 'wi-fi'];
 
@@ -38,14 +40,6 @@ const registerPodLifecycleHandlers = (
             return net.address;
           }
         }
-      }
-      console.error('Failed to retrieve IP via Node, trying PowerShell');
-      try {
-        const command = `(Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi').IPAddress`;
-        return execSync(`powershell -Command "${command}"`).toString().trim();
-      } catch (error) {
-        console.error('Failed to retrieve IP via PowerShell:', error);
-        return null;
       }
     }
 
