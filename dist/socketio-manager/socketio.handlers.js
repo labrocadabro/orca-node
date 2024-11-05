@@ -112,13 +112,17 @@ const registerPodLifecycleHandlers = (
       });
     }
     socket.on('disconnect', (reason) => {
-      logger.log('logging POD Id on disconnect', podId);
+      const podId = socket.data.podId;
+      logger.log(`logging POD Id on disconnect: ${podId}`);
       logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
-      if (reason == 'client namespace disconnect') {
+      if (
+        reason === 'client namespace disconnect' ||
+        reason === 'transport close'
+      ) {
         logger.log(
           `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
         );
-        cmClient.delete(podId);
+        cmClient.disconnect(podId);
       }
     });
   });
