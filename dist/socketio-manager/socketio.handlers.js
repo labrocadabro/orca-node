@@ -20,8 +20,41 @@ const registerPodLifecycleHandlers = (
 ) => {
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
   let orcaPrivateUrl;
-  const privateHost = socketio_manager_service_2.configValues.privateHost;
+  let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
+  if (process.env === 'win32') {
+    function getHostIp() {
+      const interfaces = os.networkInterfaces();
+      const allowedAdapters = ['ethernet', 'wi-fi'];
+
+      for (const name of Object.keys(interfaces)) {
+        for (const net of interfaces[name]) {
+          if (
+            net.family === 'IPv4' &&
+            !net.internal &&
+            allowedAdapters.some((adapter) =>
+              name.toLowerCase().includes(adapter),
+            )
+          ) {
+            return net.address;
+          }
+        }
+      }
+      console.error('Failed to retrieve IP via Node, trying PowerShell');
+      try {
+        const command = `(Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi').IPAddress`;
+        return execSync(`powershell -Command "${command}"`).toString().trim();
+      } catch (error) {
+        console.error('Failed to retrieve IP via PowerShell:', error);
+        return null;
+      }
+    }
+
+    privateHost = getHostIp();
+    if (!privateHost) {
+      throw new Error('Failed to retrieve IP address');
+    }
+  }
   if (sslEnable) {
     orcaPrivateUrl = `wss://${privateHost}`;
   } else {
