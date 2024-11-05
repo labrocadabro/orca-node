@@ -19,7 +19,6 @@ const registerPodLifecycleHandlers = (
   logger,
 ) => {
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
-  let orcaPrivateUrl;
   let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
   if (process.env === 'win32') {
@@ -55,11 +54,9 @@ const registerPodLifecycleHandlers = (
       throw new Error('Failed to retrieve IP address');
     }
   }
-  if (sslEnable) {
-    orcaPrivateUrl = `wss://${privateHost}`;
-  } else {
-    orcaPrivateUrl = `ws://192.168.0.24`;
-  }
+  const orcaPrivateUrl = sslEnable
+    ? `wss://${privateHost}`
+    : `ws://${privateHost}`;
   socket.on('orcaPulse:init', (payload) => {
     const { podImageUrl, podId, podSpec } = payload;
     if (podSpec) {
