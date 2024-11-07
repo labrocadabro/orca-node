@@ -1,15 +1,11 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', { value: true });
-exports.orphanHandler =
-  exports.findRPCSockets =
-  exports.registerPulseProxyHandlers =
-  exports.registerPodLifecycleHandlers =
-    void 0;
-const socketio_manager_service_1 = require('./socketio-manager.service');
-const socketio_manager_service_2 = require('./socketio-manager.service');
-const socketio_manager_service_3 = require('./socketio-manager.service');
-const util = require('util');
-const child_process = require('child_process');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.orphanHandler = exports.findRPCSockets = exports.registerPulseProxyHandlers = exports.registerPodLifecycleHandlers = void 0;
+const socketio_manager_service_1 = require("./socketio-manager.service");
+const socketio_manager_service_2 = require("./socketio-manager.service");
+const socketio_manager_service_3 = require("./socketio-manager.service");
+const util = require("util");
+const child_process = require("child_process");
 const exec = util.promisify(child_process.exec);
 const registerPodLifecycleHandlers = (
   io,
@@ -144,81 +140,67 @@ const registerPulseProxyHandlers = (io, socket, logger) => {
           --------------
             ${payload.message}
           `);
-  });
+    });
 };
 exports.registerPulseProxyHandlers = registerPulseProxyHandlers;
 const findRPCSockets = (podId, senderType) => {
-  let receiverType = null;
-  if (senderType == socketio_manager_service_1.ConnectionType.PulseProxy) {
-    receiverType = socketio_manager_service_1.ConnectionType.OrcaPulse;
-  } else if (
-    senderType == socketio_manager_service_1.ConnectionType.OrcaPulse
-  ) {
-    receiverType = socketio_manager_service_1.ConnectionType.PulseProxy;
-  } else {
-    throw new Error(
-      `Invalid connectionType found in socket.data: ${senderType} for podId: ${podId} `,
-    );
-  }
-  console.log({
-    db: Object.keys(socketio_manager_service_1.DB.sockets[podId]),
-  });
-  return {
-    senderSocket: socketio_manager_service_1.DB.sockets[podId][senderType],
-    receiverSocket: socketio_manager_service_1.DB.sockets[podId][receiverType],
-  };
+    let receiverType = null;
+    if (senderType == socketio_manager_service_1.ConnectionType.PulseProxy) {
+        receiverType = socketio_manager_service_1.ConnectionType.OrcaPulse;
+    }
+    else if (senderType == socketio_manager_service_1.ConnectionType.OrcaPulse) {
+        receiverType = socketio_manager_service_1.ConnectionType.PulseProxy;
+    }
+    else {
+        throw new Error(`Invalid connectionType found in socket.data: ${senderType} for podId: ${podId} `);
+    }
+    return {
+        senderSocket: socketio_manager_service_1.DB.sockets[podId][senderType],
+        receiverSocket: socketio_manager_service_1.DB.sockets[podId][receiverType],
+    };
 };
 exports.findRPCSockets = findRPCSockets;
 const orphanHandler = (cmClient) => {
-  let totalPodIdList = socketio_manager_service_3.podIdList;
-  let deletePodIdList = [];
-  let deleteCounter = 0;
-  const deletePodMap = new Map();
-  setInterval(() => {
-    for (let i = 0; i < totalPodIdList.length; i++) {
-      try {
-        if (
-          !socketio_manager_service_1.DB.sockets[totalPodIdList[i]][
-            socketio_manager_service_1.ConnectionType.OrcaPulse
-          ].connected ||
-          !socketio_manager_service_1.DB.sockets[totalPodIdList[i]][
-            socketio_manager_service_1.ConnectionType.PulseProxy
-          ].connected
-        ) {
-          deletePodIdList.push(totalPodIdList[i]);
-          deletePodMap.set(
-            socketio_manager_service_3.podIdList[i],
-            deleteCounter,
-          );
-          deleteCounter = deletePodMap.get(
-            socketio_manager_service_3.podIdList[i],
-          );
-          deleteCounter = deleteCounter + 1;
-        }
-      } catch (error) {}
-      try {
-        deletePodIdList = deletePodIdList.filter(
-          (item, index) => totalPodIdList.indexOf(item) === index,
-        );
-      } catch (error) {}
-    }
-    for (const [podId, counter] of deletePodMap) {
-      if (counter >= 1) {
-        try {
-          cmClient.exists(podId).then((isPodAvailable) => {
-            if (isPodAvailable) {
-              cmClient.delete(podId);
-              deletePodMap.delete(podId);
-              deletePodIdList = deletePodIdList.filter((e) => e !== podId);
-              totalPodIdList = totalPodIdList.filter((e) => e !== podId);
-              delete socketio_manager_service_1.DB.sockets[podId];
-            } else {
+    let totalPodIdList = socketio_manager_service_3.podIdList;
+    let deletePodIdList = [];
+    let deleteCounter = 0;
+    const deletePodMap = new Map();
+    setInterval(() => {
+        for (let i = 0; i < totalPodIdList.length; i++) {
+            try {
+                if (!socketio_manager_service_1.DB.sockets[totalPodIdList[i]][socketio_manager_service_1.ConnectionType.OrcaPulse].connected ||
+                    !socketio_manager_service_1.DB.sockets[totalPodIdList[i]][socketio_manager_service_1.ConnectionType.PulseProxy].connected) {
+                    deletePodIdList.push(totalPodIdList[i]);
+                    deletePodMap.set(socketio_manager_service_3.podIdList[i], deleteCounter);
+                    deleteCounter = deletePodMap.get(socketio_manager_service_3.podIdList[i]);
+                    deleteCounter = deleteCounter + 1;
+                }
             }
-          });
-        } catch (error) {}
-      }
-    }
-  }, 60000);
+            catch (error) { }
+            try {
+                deletePodIdList = deletePodIdList.filter((item, index) => totalPodIdList.indexOf(item) === index);
+            }
+            catch (error) { }
+        }
+        for (const [podId, counter] of deletePodMap) {
+            if (counter >= 1) {
+                try {
+                    cmClient.exists(podId).then((isPodAvailable) => {
+                        if (isPodAvailable) {
+                            cmClient.delete(podId);
+                            deletePodMap.delete(podId);
+                            deletePodIdList = deletePodIdList.filter((e) => e !== podId);
+                            totalPodIdList = totalPodIdList.filter((e) => e !== podId);
+                            delete socketio_manager_service_1.DB.sockets[podId];
+                        }
+                        else {
+                        }
+                    });
+                }
+                catch (error) { }
+            }
+        }
+    }, 60000);
 };
 exports.orphanHandler = orphanHandler;
 //# sourceMappingURL=socketio.handlers.js.map
