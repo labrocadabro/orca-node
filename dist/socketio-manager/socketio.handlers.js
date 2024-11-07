@@ -11,13 +11,7 @@ const socketio_manager_service_3 = require('./socketio-manager.service');
 const util = require('util');
 const child_process = require('child_process');
 const exec = util.promisify(child_process.exec);
-const registerPodLifecycleHandlers = (
-  io,
-  socket,
-  pulseProxyPort,
-  cmClient,
-  logger,
-) => {
+const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logger) => {
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
   let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
@@ -31,9 +25,7 @@ const registerPodLifecycleHandlers = (
           if (
             net.family === 'IPv4' &&
             !net.internal &&
-            allowedAdapters.some((adapter) =>
-              name.toLowerCase().includes(adapter),
-            )
+            allowedAdapters.some((adapter) => name.toLowerCase().includes(adapter))
           ) {
             return net.address;
           }
@@ -54,17 +46,13 @@ const registerPodLifecycleHandlers = (
       throw new Error('Failed to retrieve IP address');
     }
   }
-  const orcaPrivateUrl = sslEnable
-    ? `wss://${privateHost}`
-    : `ws://${privateHost}`;
+  const orcaPrivateUrl = sslEnable ? `wss://${privateHost}` : `ws://${privateHost}`;
   socket.on('orcaPulse:init', (payload) => {
     const { podImageUrl, podId, podSpec } = payload;
     if (podSpec) {
       cmClient.exists(podId).then((isPodAvailable) => {
         if (isPodAvailable) {
-          logger.log(
-            `Pod with podId#${podId} already exists, skipped creation.`,
-          );
+          logger.log(`Pod with podId#${podId} already exists, skipped creation.`);
         } else {
           cmClient.createByPodSpec(podSpec);
         }
@@ -74,14 +62,10 @@ const registerPodLifecycleHandlers = (
         if (isImageUrlValid) {
           cmClient.imageExist(podImageUrl).then((isImageExist) => {
             if (isImageExist) {
-              logger.log(
-                `Image with imageUrl#"${podImageUrl}" already exists, skipped pulling.`,
-              );
+              logger.log(`Image with imageUrl#"${podImageUrl}" already exists, skipped pulling.`);
               cmClient.exists(podId).then((isPodAvailable) => {
                 if (isPodAvailable) {
-                  logger.log(
-                    `Pod with podId#${podId} already exists, skipped creation.`,
-                  );
+                  logger.log(`Pod with podId#${podId} already exists, skipped creation.`);
                 } else {
                   cmClient.create(
                     podId,

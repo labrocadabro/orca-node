@@ -58,10 +58,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const hostnameRegex = new RegExp(hostnameRegexStr);
     let tempUrlArray = imageUrl.split('/');
     if (tempUrlArray.length >= 2) {
-      if (
-        hostnameRegex.test(tempUrlArray[0]) ||
-        tempUrlArray[0] == 'localhost'
-      ) {
+      if (hostnameRegex.test(tempUrlArray[0]) || tempUrlArray[0] == 'localhost') {
         return true;
       } else {
         return false;
@@ -89,19 +86,13 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const inVol = `${podId}-in`;
     const outVol = `${podId}-out`;
     const userContainerName = `user-${podId}`;
-    const userEnvVariableString = userEnvVariables
-      .map((v) => `-e ${v}`)
-      .join(' ');
+    const userEnvVariableString = userEnvVariables.map((v) => `-e ${v}`).join(' ');
     const userContainerCommand = `podman run -d --restart=always --pod ${podId} -v ${inVol}:/in -v ${outVol}:/out:Z,U --pull always --name=${userContainerName} ${userEnvVariableString} ${imageUrl}`;
     const pulseProxyContainerName = `pulse-proxy-${podId}`;
     const pulseProxyImageUrl = 'docker.io/orcacompute/pulse-proxy:main';
-    const pulseProxyEnvVariables = internalEnvVariables
-      .map((v) => `-e ${v}`)
-      .join(' ');
+    const pulseProxyEnvVariables = internalEnvVariables.map((v) => `-e ${v}`).join(' ');
     const network =
-      process.platform === 'win32'
-        ? 'bridge'
-        : 'slirp4netns:allow_host_loopback=true';
+      process.platform === 'win32' ? 'bridge' : 'slirp4netns:allow_host_loopback=true';
     const pulseProxyContainerCommand = `podman run -d --restart=always --pod new:${podId} -v ${inVol}:/in:Z,U -v ${outVol}:/out --pull always --network ${network} --name=${pulseProxyContainerName} ${pulseProxyEnvVariables}  ${pulseProxyImageUrl}`;
     try {
       const { stdout, stderr } = await exec(pulseProxyContainerCommand);
@@ -114,9 +105,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   async createByPodSpec(podSpec) {
     try {
       const network =
-        process.platform === 'win32'
-          ? 'bridge'
-          : 'slirp4netns:allow_host_loopback=true';
+        process.platform === 'win32' ? 'bridge' : 'slirp4netns:allow_host_loopback=true';
       const { stdout, stderr } = await exec(
         `echo "${podSpec}" | podman play kube --network ${network} -`,
       );
