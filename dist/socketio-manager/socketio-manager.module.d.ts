@@ -1,2 +1,1 @@
-export declare class SocketioManagerModule {
-}
+export declare class SocketioManagerModule {}
