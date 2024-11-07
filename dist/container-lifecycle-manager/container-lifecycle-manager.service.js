@@ -142,6 +142,25 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       this.logger.error(error.stderr);
     }
   }
+  disconnectAll() {
+    const containerStopCommand = `podman pod stop -a`;
+    try {
+      execSync(containerStopCommand);
+    } catch (error) {
+      this.logger.error(error.stderr);
+    }
+  }
+  disconnect(podId) {
+    if (!podId) {
+      throw new Error('podId is required');
+    }
+    const containerStopCommand = `podman pod stop ${podId}`;
+    try {
+      execSync(containerStopCommand);
+    } catch (error) {
+      this.logger.error(error.stderr);
+    }
+  }
 };
 exports.ContainerLifecycleManagerService = ContainerLifecycleManagerService;
 exports.ContainerLifecycleManagerService = ContainerLifecycleManagerService = __decorate(
