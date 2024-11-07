@@ -1,1 +1,10 @@
-{"version":3,"file":"dynamic.lib.js","sourceRoot":"","sources":["../src/dynamic.lib.ts"],"names":[],"mappings":""}
+{
+  "version": 3,
+  "file": "dynamic.lib.js",
+  "sourceRoot": "",
+  "sources": [
+    "../src/dynamic.lib.ts"
+  ],
+  "names": [],
+  "mappings": ""
+}

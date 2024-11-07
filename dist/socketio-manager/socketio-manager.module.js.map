@@ -1,1 +1,10 @@
-{"version":3,"file":"socketio-manager.module.js","sourceRoot":"","sources":["../../src/socketio-manager/socketio-manager.module.ts"],"names":[],"mappings":";;;;;;;;;AAAA,2CAAwC;AAGjC,IAAM,qBAAqB,GAA3B,MAAM,qBAAqB;CAAG,CAAA;AAAxB,sDAAqB;gCAArB,qBAAqB;IADjC,IAAA,eAAM,EAAC,EAAE,CAAC;GACE,qBAAqB,CAAG"}
+{
+  "version": 3,
+  "file": "socketio-manager.module.js",
+  "sourceRoot": "",
+  "sources": [
+    "../../src/socketio-manager/socketio-manager.module.ts"
+  ],
+  "names": [],
+  "mappings": ";;;;;;;;;AAAA,2CAAwC;AAGjC,IAAM,qBAAqB,GAA3B,MAAM,qBAAqB;CAAG,CAAA;AAAxB,sDAAqB;gCAArB,qBAAqB;IADjC,IAAA,eAAM,EAAC,EAAE,CAAC;GACE,qBAAqB,CAAG"
+}
