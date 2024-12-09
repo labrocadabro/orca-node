@@ -120,10 +120,10 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const podRmCommand = `podman pod rm -a`;
     const volumePruneCommand = `podman volume prune -f`;
     try {
-      await execSync(podStopCommand);
-      await execSync(podPruneCommand);
-      await execSync(podRmCommand);
-      await execSync(volumePruneCommand);
+      execSync(podStopCommand);
+      execSync(podPruneCommand);
+      execSync(podRmCommand);
+      execSync(volumePruneCommand);
     } catch (error) {
       this.logger.error(error.stderr);
     }
@@ -134,10 +134,10 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const volumeInRmCommand = `podman volume rm ${podId}-in`;
     const volumeOutRmCommand = `podman volume rm ${podId}-out`;
     try {
-      await execSync(podStopCommand);
-      await execSync(podRmCommand);
-      await execSync(volumeInRmCommand);
-      await execSync(volumeOutRmCommand);
+      execSync(podStopCommand);
+      execSync(podRmCommand);
+      execSync(volumeInRmCommand);
+      execSync(volumeOutRmCommand);
     } catch (error) {
       this.logger.error(error.stderr);
     }
