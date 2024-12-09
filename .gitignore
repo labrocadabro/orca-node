@@ -4,3 +4,4 @@ node_modules
 modified
 package-lock.json
 yarn.lock
+.npmrc
