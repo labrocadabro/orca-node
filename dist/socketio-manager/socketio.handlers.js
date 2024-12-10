@@ -101,17 +101,17 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
         }
       });
     }
-    socket.on('disconnect', (reason) => {
-      const podId = socket.data.podId;
-      logger.log(`logging POD Id on disconnect: ${podId}`);
-      logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
-      if (reason === 'client namespace disconnect' || reason === 'transport close') {
-        logger.log(
-          `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
-        );
-        cmClient.disconnect(podId);
-      }
-    });
+  });
+  socket.on('disconnect', (reason) => {
+    const podId = socket.data.podId;
+    logger.log(`logging POD Id on disconnect: ${podId}`);
+    logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
+    if (reason === 'client namespace disconnect' || reason === 'transport close') {
+      logger.log(
+        `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
+      );
+      cmClient.disconnect(podId);
+    }
   });
 };
 exports.registerPodLifecycleHandlers = registerPodLifecycleHandlers;
@@ -121,7 +121,7 @@ const registerPulseProxyHandlers = (io, socket, logger) => {
     const verifyMessage = 'verification message from orca';
     socket.emit('pulse_proxy:verify_connection', verifyMessage);
   });
-  socket.on('pulse_proxy:init_error', (payload) => {
+  socket.on('pulseproxy:init_error', (payload) => {
     logger.error(`[Pulse proxy]: initialization failed for Pod Id: ${payload.podId}
       Error message:
           --------------
@@ -176,11 +176,11 @@ const orphanHandler = (cmClient) => {
       } catch (error) {}
     }
     for (const [podId, counter] of deletePodMap) {
-      if (counter >= 1) {
+      if (counter >= 3) {
         try {
           cmClient.exists(podId).then((isPodAvailable) => {
             if (isPodAvailable) {
-              cmClient.delete(podId);
+              cmClient.disconnect(podId);
               deletePodMap.delete(podId);
               deletePodIdList = deletePodIdList.filter((e) => e !== podId);
               totalPodIdList = totalPodIdList.filter((e) => e !== podId);
