@@ -13,16 +13,42 @@ const child_process = require('child_process');
 const exec = util.promisify(child_process.exec);
 const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logger) => {
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
-  let orcaPrivateUrl;
-  const privateHost = socketio_manager_service_2.configValues.privateHost;
+  let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
-  if (sslEnable) {
-    orcaPrivateUrl = `wss://${privateHost}`;
-  } else {
-    orcaPrivateUrl = `ws://${privateHost}`;
+  if (process.env === 'win32') {
+    function getHostIp() {
+      const interfaces = os.networkInterfaces();
+      const allowedAdapters = ['ethernet', 'wi-fi'];
+
+      for (const name of Object.keys(interfaces)) {
+        for (const net of interfaces[name]) {
+          if (
+            net.family === 'IPv4' &&
+            !net.internal &&
+            allowedAdapters.some((adapter) => name.toLowerCase().includes(adapter))
+          ) {
+            return net.address;
+          }
+        }
+      }
+      console.error('Failed to retrieve IP via Node, trying PowerShell');
+      try {
+        const command = `(Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias 'Wi-Fi').IPAddress`;
+        return execSync(`powershell -Command "${command}"`).toString().trim();
+      } catch (error) {
+        console.error('Failed to retrieve IP via PowerShell:', error);
+        return null;
+      }
+    }
+
+    privateHost = getHostIp();
+    if (!privateHost) {
+      throw new Error('Failed to retrieve IP address');
+    }
   }
+  const orcaPrivateUrl = sslEnable ? `wss://${privateHost}` : `ws://${privateHost}`;
   socket.on('orcaPulse:init', (payload) => {
-    const { podImageUrl, podId, orcaUrl, podSpec } = payload;
+    const { podImageUrl, podId, podSpec } = payload;
     if (podSpec) {
       cmClient.exists(podId).then((isPodAvailable) => {
         if (isPodAvailable) {
@@ -76,13 +102,14 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
       });
     }
     socket.on('disconnect', (reason) => {
-      logger.log('logging POD Id on disconnect', podId);
+      const podId = socket.data.podId;
+      logger.log(`logging POD Id on disconnect: ${podId}`);
       logger.log(`orca - pulse client disconnected[reason: ${reason}]`);
-      if (reason == 'client namespace disconnect') {
+      if (reason === 'client namespace disconnect' || reason === 'transport close') {
         logger.log(
-          `orca - pulse client successfuly  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
+          `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
         );
-        cmClient.delete(podId);
+        cmClient.disconnect(podId);
       }
     });
   });
