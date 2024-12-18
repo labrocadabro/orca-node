@@ -109,7 +109,7 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
         logger.log(
           `orca - pulse client successfully  disconnected after success[reason: ${reason}], shutting down pod with Id ${podId} `,
         );
-        cmClient.disconnect(podId);
+        cmClient.delete(podId);
       }
     });
   });
@@ -176,7 +176,7 @@ const orphanHandler = (cmClient) => {
       } catch (error) {}
     }
     for (const [podId, counter] of deletePodMap) {
-      if (counter >= 1) {
+      if (counter >= 3) {
         try {
           cmClient.exists(podId).then((isPodAvailable) => {
             if (isPodAvailable) {

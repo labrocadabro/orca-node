@@ -135,7 +135,7 @@ let SocketioManagerService = class SocketioManagerService {
   close() {
     this.io.close();
     this.httpServer.close();
-    this.cmClient.disconnectAll();
+    this.cmClient.deleteAll();
   }
 };
 exports.SocketioManagerService = SocketioManagerService;
