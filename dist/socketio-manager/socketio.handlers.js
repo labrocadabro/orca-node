@@ -15,7 +15,7 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
   let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
-  if (process.env === 'win32') {
+  if (process.platform === 'win32') {
     function getHostIp() {
       const interfaces = os.networkInterfaces();
       const allowedAdapters = ['ethernet', 'wi-fi'];
