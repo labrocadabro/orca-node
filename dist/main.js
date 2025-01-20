@@ -10,7 +10,7 @@ async function bootstrap() {
     bufferLogs: true,
   });
   app.useLogger(app.get(logger_service_1.LoggerService));
-  await app.listen(3000);
+  await app.listen(3333);
   return app.get(app_service_1.default);
 }
 exports.bootstrap = bootstrap;
