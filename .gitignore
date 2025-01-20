@@ -5,3 +5,4 @@ modified
 package-lock.json
 yarn.lock
 .npmrc
+*.diff
