@@ -17,7 +17,7 @@ function getWslGateway() {
   // Method 2: Check specific podman-orca WSL instance route
   try {
     const output = execSync('wsl -d podman-orca ip route', { timeout: 5000 }).toString();
-    const defaultRoute = output.split('\n').find(line => line.startsWith('default'));
+    const defaultRoute = output.split('\n').find((line) => line.startsWith('default'));
     if (defaultRoute) {
       const gateway = defaultRoute.split(' ')[2].trim();
       if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(gateway)) {
@@ -43,7 +43,9 @@ exports.default = () => ({
   sslCert: process.env.ORCA_SSL_CERT,
   publicHost:
     process.env.ORCA_PUBLIC_HOST || `${process.env.ORCA_SERVER_IP}:${process.env.ORCA_SERVER_PORT}`,
-  privateHost: process.env.ORCA_PRIVATE_HOST || (process.platform === 'win32' ? getWslGateway() : 'host.container.internal'),
+  privateHost:
+    process.env.ORCA_PRIVATE_HOST ||
+    (process.platform === 'win32' ? getWslGateway() : 'host.containers.internal'),
   apiKey: process.env.ORCA_API_KEY,
   metricsServer: process.env.METRICS_SERVER || 'http://localhost:3000/metrics',
 });
