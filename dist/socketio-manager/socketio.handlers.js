@@ -16,10 +16,7 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
   const sslEnable = socketio_manager_service_2.configValues.sslEnable;
   let privateHost = socketio_manager_service_2.configValues.privateHost;
   const orcaSslRootCa = socketio_manager_service_2.configValues.orcaSslRootCa;
-  if (process.platform === 'win32') {
-    privateHost = 'host.docker.internal';
-  }
-  const orcaPrivateUrl = sslEnable ? `wss://${privateHost}` : `ws://${privateHost}`;
+  const orcaPrivateUrl = sslEnable ? `wss://${privateHost}:${pulseProxyPort}` : `ws://${privateHost}:${pulseProxyPort}`;
   socket.on('orcaPulse:init', (payload) => {
     const { podImageUrl, podId, podSpec } = payload;
     if (podSpec) {
@@ -45,9 +42,13 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
                     podImageUrl,
                     [],
                     [
-                      `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
+                      `ORCA_URL=${orcaPrivateUrl}/${podId}`,
                       `ORCA_POD_ID=${podId}`,
                       `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
+                      'ORCA_SOCKET_TIMEOUT=60000',
+                      'ORCA_SOCKET_TRANSPORTS=["websocket","polling"]',
+                      'ORCA_SOCKET_UPGRADE=true',
+                      'ORCA_SOCKET_FORCE_NEW=true'
                     ],
                   );
                 }
@@ -59,7 +60,7 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
                   podImageUrl,
                   [],
                   [
-                    `ORCA_URL=${orcaPrivateUrl}:${pulseProxyPort}/${podId}`,
+                    `ORCA_URL=${orcaPrivateUrl}/${podId}`,
                     `ORCA_POD_ID=${podId}`,
                     `ORCA_SSL_ROOT_CA="${orcaSslRootCa}"`,
                   ],
