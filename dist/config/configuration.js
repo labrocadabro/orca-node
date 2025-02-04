@@ -3,11 +3,29 @@ const { execSync } = require('child_process');
 
 Object.defineProperty(exports, '__esModule', { value: true });
 function getWslGateway() {
-  // Get gateway IP from the virtual machine
-  const output = execSync(`wsl -d podman-orca ip route`).toString();
-  const defaultRoute = output.split('\n').find(line => line.startsWith('default'));
-  if (defaultRoute) {
-    return defaultRoute.split(' ')[2].trim();
+  // Method 1: Direct WSL hostname (most reliable, works without admin)
+  try {
+    const output = execSync('wsl hostname -I', { timeout: 5000 }).toString().trim();
+    const ip = output.split(' ')[0];
+    if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip)) {
+      return ip;
+    }
+  } catch (err) {
+    console.warn('Failed to get WSL IP using hostname:', err.message);
+  }
+
+  // Method 2: Check specific podman-orca WSL instance route
+  try {
+    const output = execSync('wsl -d podman-orca ip route', { timeout: 5000 }).toString();
+    const defaultRoute = output.split('\n').find(line => line.startsWith('default'));
+    if (defaultRoute) {
+      const gateway = defaultRoute.split(' ')[2].trim();
+      if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(gateway)) {
+        return gateway;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to get WSL IP using podman-orca route:', err.message);
   }
 
   return 'host.containers.internal';
