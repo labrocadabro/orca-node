@@ -7,9 +7,8 @@ function getWslGateway() {
   try {
     const output = execSync('wsl hostname -I', { timeout: 5000 }).toString().trim();
     const ip = output.split(' ')[0];
-    if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip)) {
-      return ip;
-    }
+
+    return ip;
   } catch (err) {
     console.warn('Failed to get WSL IP using hostname:', err.message);
   }
@@ -20,9 +19,8 @@ function getWslGateway() {
     const defaultRoute = output.split('\n').find((line) => line.startsWith('default'));
     if (defaultRoute) {
       const gateway = defaultRoute.split(' ')[2].trim();
-      if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(gateway)) {
-        return gateway;
-      }
+
+      return gateway;
     }
   } catch (err) {
     console.warn('Failed to get WSL IP using podman-orca route:', err.message);
