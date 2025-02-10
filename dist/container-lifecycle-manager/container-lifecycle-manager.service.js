@@ -106,6 +106,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     try {
       const network =
         process.platform === 'win32' ? 'bridge' : 'slirp4netns:allow_host_loopback=true';
+        await exec('podman pull k8s.gcr.io/pause:3.5');
       const { stdout, stderr } = await exec(
         `echo "${podSpec}" | podman play kube --network ${network} -`,
       );
