@@ -1,6 +1,6 @@
 {
   "name": "@_koii/orca-node",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "",
   "author": "",
   "main": "dist/main.js",

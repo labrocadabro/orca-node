@@ -115,12 +115,19 @@ async createByPodSpec(podSpec, podId) {
 
     const network = process.platform === "win32" ? "bridge" : "slirp4netns:allow_host_loopback=true";
 
-   const yamlFile = path.join(os.tmpdir(), `podspec-${podId}.yaml`);
+    const yamlFile = path.join(os.tmpdir(), `podspec-${podId}.yaml`);
     fs.writeFileSync(yamlFile, podSpec.replace(/\r\n/g, "\n"), "utf8");
-    await new Promise((resolve) => setTimeout(resolve, 100)); // in case file is locked
-    const yamlFilePosix = yamlFile.replace(/\\/g, "/");
 
-    const command = `podman play kube --network ${network} ${yamlFilePosix}`;
+    let yamlForPodman = yamlFile;
+
+    if (process.platform === "win32") {
+      // Convert Windows paths to `/mnt/c/...` format for Podman
+      yamlForPodman = yamlFile.replace(/\\/g, "/");
+      const driveLetter = yamlForPodman.charAt(0).toLowerCase();
+      yamlForPodman = `/mnt/${driveLetter}${yamlForPodman.slice(2)}`;
+    }
+
+    const command = `podman play kube --network ${network} ${yamlForPodman}`;
     const { stdout, stderr } = await exec(command, { shell: true });
 
     // Cleanup
