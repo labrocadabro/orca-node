@@ -121,10 +121,9 @@ async createByPodSpec(podSpec, podId) {
     let yamlForPodman = yamlFile;
 
     if (process.platform === "win32") {
-      // Convert Windows paths to `/mnt/c/...` format for Podman
-      yamlForPodman = yamlFile.replace(/\\/g, "/");
-      const driveLetter = yamlForPodman.charAt(0).toLowerCase();
-      yamlForPodman = `/mnt/${driveLetter}${yamlForPodman.slice(2)}`;
+      // Convert Windows paths to root-relative format for Podman
+      yamlForPodman = yamlFile.replace(/\\/g, "/"); // Convert backslashes to forward slashes
+      yamlForPodman = yamlForPodman.slice(2); // remove drive letter
     }
 
     const command = `podman play kube --network ${network} ${yamlForPodman}`;
