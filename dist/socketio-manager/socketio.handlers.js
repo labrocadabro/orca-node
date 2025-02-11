@@ -127,34 +127,43 @@ const orphanHandler = (cmClient) => {
   let deleteCounter = 0;
   const deletePodMap = new Map();
   setInterval(() => {
-    for (let i = 0; i < totalPodIdList.length; i++) {
-      try {
-        if (
-          !socketio_manager_service_1.DB.sockets[totalPodIdList[i]][
-            socketio_manager_service_1.ConnectionType.OrcaPulse
-          ].connected ||
-          !socketio_manager_service_1.DB.sockets[totalPodIdList[i]][
-            socketio_manager_service_1.ConnectionType.PulseProxy
-          ].connected
-        ) {
-          deletePodIdList.push(totalPodIdList[i]);
-          deletePodMap.set(socketio_manager_service_3.podIdList[i], deleteCounter);
-          deleteCounter = deletePodMap.get(socketio_manager_service_3.podIdList[i]);
-          deleteCounter = deleteCounter + 1;
-        }
-      } catch (error) {}
-      try {
-        deletePodIdList = deletePodIdList.filter(
-          (item, index) => totalPodIdList.indexOf(item) === index,
-        );
-      } catch (error) {}
+for (let i = 0; i < totalPodIdList.length; i++) {
+  try {
+    let podId = totalPodIdList[i];
+
+    let isOrcaPulseConnected =
+      socketio_manager_service_1.DB.sockets[podId][
+        socketio_manager_service_1.ConnectionType.OrcaPulse
+      ].connected;
+
+    let isPulseProxyConnected =
+      socketio_manager_service_1.DB.sockets[podId][
+        socketio_manager_service_1.ConnectionType.PulseProxy
+      ].connected;
+
+    if (isOrcaPulseConnected && isPulseProxyConnected) {
+      // Connection exists: delete podId from deletePodMap to reset the counter
+      deletePodMap.delete(podId);
+    } else {
+      // Connection lost: increment delete counter
+      deletePodIdList.push(podId);
+
+      let currentCount = deletePodMap.get(podId) || 0;
+      deletePodMap.set(podId, currentCount + 1);
+      console.log(`${podId} connection lost, current count: ${currentCount + 1}`);
     }
+  } catch (error) {
+    console.error(`Error checking pod status: ${error}`);
+  }
+}
     for (const [podId, counter] of deletePodMap) {
       if (counter >= 3) {
         try {
           cmClient.exists(podId).then((isPodAvailable) => {
             if (isPodAvailable) {
+              console.log(`${podId} connection lost, deleting pod`);
               cmClient.delete(podId);
+
               deletePodMap.delete(podId);
               deletePodIdList = deletePodIdList.filter((e) => e !== podId);
               totalPodIdList = totalPodIdList.filter((e) => e !== podId);
