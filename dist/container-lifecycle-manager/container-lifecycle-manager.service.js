@@ -31,6 +31,7 @@ const child_process = require('child_process');
 const util = require('util');
 const logger_service_1 = require('../logger/logger.service');
 const exec = util.promisify(child_process.exec);
+      const { spawn } = require("child_process");
 function execSync(cmdstr) {
   try {
     const stdout = child_process.execSync(cmdstr);
@@ -104,13 +105,25 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
   }
   async createByPodSpec(podSpec) {
     try {
+
+
+      await execPromise('podman pull k8s.gcr.io/pause:3.5')
+        .catch((error) => {
+          this.logger.error(`Failed to pull image: ${error.stderr || error.message}`);
+          throw new Error('Infra image pull failed, cannot continue.');
+        });
+
       const network =
         process.platform === 'win32' ? 'bridge' : 'slirp4netns:allow_host_loopback=true';
-        await exec('podman pull k8s.gcr.io/pause:3.5');
-      const { stdout, stderr } = await exec(
-        `echo "${podSpec}" | podman play kube --network ${network} -`,
-      );
-      this.logger.log(stdout);
+
+      const podman = spawn('podman', ['play', 'kube', '--network', network, '-']);
+
+      podman.stdin.write(podSpec.replace(/\r\n/g, '\n')); // Normalize newlines
+      podman.stdin.end();
+
+      podman.stdout.on('data', (data) => this.logger.log(`stdout: ${data}`));
+      podman.stderr.on('data', (data) => this.logger.error(`stderr: ${data}`));
+      podman.on('close', (code) => this.logger.log(`podman exited with code ${code}`));
     } catch (error) {
       this.logger.error(error.stderr);
     }
