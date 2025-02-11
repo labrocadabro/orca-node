@@ -24,7 +24,7 @@ const registerPodLifecycleHandlers = (io, socket, pulseProxyPort, cmClient, logg
         if (isPodAvailable) {
           logger.log(`Pod with podId#${podId} already exists, skipped creation.`);
         } else {
-          cmClient.createByPodSpec(podSpec);
+          cmClient.createByPodSpec(podSpec, podId);
         }
       });
     } else {

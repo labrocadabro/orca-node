@@ -31,6 +31,7 @@ const child_process = require('child_process');
 const util = require('util');
 const logger_service_1 = require('../logger/logger.service');
 const exec = util.promisify(child_process.exec);
+const os = require("os");
 
     const fs = require("fs");
 const path = require("path");
@@ -107,14 +108,14 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     }
   }
 
-async createByPodSpec(podSpec) {
+async createByPodSpec(podSpec, podId) {
   try {
 
     await exec("podman pull k8s.gcr.io/pause:3.5");
 
     const network = process.platform === "win32" ? "bridge" : "slirp4netns:allow_host_loopback=true";
 
-    const yamlFile = path.join(__dirname, "podspec.yaml");
+   const yamlFile = path.join(os.tmpdir(), `podspec-${podId}.yaml`);
     fs.writeFileSync(yamlFile, podSpec.replace(/\r\n/g, "\n"), "utf8");
 
     const command = `podman play kube --network ${network} ${yamlFile}`;

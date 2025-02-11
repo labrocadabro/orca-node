@@ -12,7 +12,7 @@ export declare class ContainerLifecycleManagerService {
     userEnvVariables: Array<string>,
     internalEnvVariables: Array<string>,
   ): Promise<void>;
-  createByPodSpec(podSpec: any): Promise<void>;
+  createByPodSpec(podSpec: string, podId: string): Promise<void>;
   deleteAll(): Promise<void>;
   delete(podId: string): Promise<void>;
 }
