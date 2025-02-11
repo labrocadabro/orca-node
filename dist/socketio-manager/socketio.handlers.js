@@ -127,35 +127,41 @@ const orphanHandler = (cmClient) => {
   let deleteCounter = 0;
   const deletePodMap = new Map();
   setInterval(() => {
-for (let i = 0; i < totalPodIdList.length; i++) {
-  try {
-    let podId = totalPodIdList[i];
+    for (let i = 0; i < totalPodIdList.length; i++) {
+      try {
+        let podId = totalPodIdList[i];
 
-    let isOrcaPulseConnected =
-      socketio_manager_service_1.DB.sockets[podId][
-        socketio_manager_service_1.ConnectionType.OrcaPulse
-      ].connected;
+        // First check if the pod exists in DB.sockets
+        if (!socketio_manager_service_1.DB.sockets[podId]?.[
+          socketio_manager_service_1.ConnectionType.OrcaPulse
+        ] || !socketio_manager_service_1.DB.sockets[podId]?.[
+          socketio_manager_service_1.ConnectionType.PulseProxy
+        ]) {
+          continue;
+        }
 
-    let isPulseProxyConnected =
-      socketio_manager_service_1.DB.sockets[podId][
-        socketio_manager_service_1.ConnectionType.PulseProxy
-      ].connected;
+        let isOrcaPulseConnected = socketio_manager_service_1.DB.sockets[podId][
+          socketio_manager_service_1.ConnectionType.OrcaPulse
+        ].connected;
 
-    if (isOrcaPulseConnected && isPulseProxyConnected) {
-      // Connection exists: delete podId from deletePodMap to reset the counter
-      deletePodMap.delete(podId);
-    } else {
-      // Connection lost: increment delete counter
-      deletePodIdList.push(podId);
+        let isPulseProxyConnected = socketio_manager_service_1.DB.sockets[podId][
+          socketio_manager_service_1.ConnectionType.PulseProxy
+        ].connected;
 
-      let currentCount = deletePodMap.get(podId) || 0;
-      deletePodMap.set(podId, currentCount + 1);
-      console.log(`${podId} connection lost, current count: ${currentCount + 1}`);
+        if (isOrcaPulseConnected && isPulseProxyConnected) {
+          // Connection exists: delete podId from deletePodMap to reset the counter
+          deletePodMap.delete(podId);
+        } else {
+          // Connection lost: increment delete counter
+          deletePodIdList.push(podId);
+          let currentCount = deletePodMap.get(podId) || 0;
+          deletePodMap.set(podId, currentCount + 1);
+          console.log(`${podId} connection lost, current count: ${currentCount + 1}`);
+        }
+      } catch (error) {
+        console.error(`Error checking pod status for ${podId}: ${error}`);
+      }
     }
-  } catch (error) {
-    console.error(`Error checking pod status: ${error}`);
-  }
-}
     for (const [podId, counter] of deletePodMap) {
       if (counter >= 3) {
         try {
