@@ -31,7 +31,10 @@ const child_process = require('child_process');
 const util = require('util');
 const logger_service_1 = require('../logger/logger.service');
 const exec = util.promisify(child_process.exec);
-      const { spawn } = require("child_process");
+
+    const fs = require("fs");
+const path = require("path");
+
 function execSync(cmdstr) {
   try {
     const stdout = child_process.execSync(cmdstr);
@@ -103,31 +106,32 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
       this.logger.error(error.stderr);
     }
   }
-  async createByPodSpec(podSpec) {
-    try {
 
+async createByPodSpec(podSpec) {
+  try {
 
-      await execPromise('podman pull k8s.gcr.io/pause:3.5')
-        .catch((error) => {
-          this.logger.error(`Failed to pull image: ${error.stderr || error.message}`);
-          throw new Error('Infra image pull failed, cannot continue.');
-        });
+    await exec("podman pull k8s.gcr.io/pause:3.5");
 
-      const network =
-        process.platform === 'win32' ? 'bridge' : 'slirp4netns:allow_host_loopback=true';
+    const network = process.platform === "win32" ? "bridge" : "slirp4netns:allow_host_loopback=true";
 
-      const podman = spawn('podman', ['play', 'kube', '--network', network, '-']);
+    const yamlFile = path.join(__dirname, "podspec.yaml");
+    fs.writeFileSync(yamlFile, podSpec.replace(/\r\n/g, "\n"), "utf8");
 
-      podman.stdin.write(podSpec.replace(/\r\n/g, '\n')); // Normalize newlines
-      podman.stdin.end();
+    const command = `podman play kube --network ${network} ${yamlFile}`;
+    const { stdout, stderr } = await exec(command, { shell: true });
 
-      podman.stdout.on('data', (data) => this.logger.log(`stdout: ${data}`));
-      podman.stderr.on('data', (data) => this.logger.error(`stderr: ${data}`));
-      podman.on('close', (code) => this.logger.log(`podman exited with code ${code}`));
-    } catch (error) {
-      this.logger.error(error.stderr);
-    }
+    // Cleanup
+    fs.unlinkSync(yamlFile);
+
+    if (stdout) this.logger.log(`stdout: ${stdout}`);
+    if (stderr) this.logger.error(`stderr: ${stderr}`);
+
+  } catch (error) {
+    this.logger.error(`Error in createByPodSpec: ${error.message}`);
+    this.logger.error(`Full error object: ${JSON.stringify(error, null, 2)}`);
   }
+}
+
   async deleteAll() {
     const podStopCommand = `podman pod stop -a`;
     const podPruneCommand = `podman pod prune -f`;
