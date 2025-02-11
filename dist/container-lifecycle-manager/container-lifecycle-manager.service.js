@@ -117,8 +117,10 @@ async createByPodSpec(podSpec, podId) {
 
    const yamlFile = path.join(os.tmpdir(), `podspec-${podId}.yaml`);
     fs.writeFileSync(yamlFile, podSpec.replace(/\r\n/g, "\n"), "utf8");
+    await new Promise((resolve) => setTimeout(resolve, 100)); // in case file is locked
+    const yamlFilePosix = yamlFile.replace(/\\/g, "/");
 
-    const command = `podman play kube --network ${network} ${yamlFile}`;
+    const command = `podman play kube --network ${network} ${yamlFilePosix}`;
     const { stdout, stderr } = await exec(command, { shell: true });
 
     // Cleanup
