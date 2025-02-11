@@ -34,17 +34,29 @@ let LoggerService = class LoggerService extends common_1.ConsoleLogger {
     // Log method
     const originalLog = this.log.bind(this);
     this.log = function (message, context) {
-      message.split('\n').forEach(line => originalLog(line, context));
+      if (typeof message === 'string' && message.includes('\n')) {
+        message.split('\n').forEach(line => originalLog(line, context));
+      } else {
+        originalLog(message, context);
+      }
     };
     // Error method
     const originalError = this.error.bind(this);
     this.error = function (message, stack, context) {
-      message.split('\n').forEach(line => originalError(line, stack, context));
+      if (typeof message === 'string' && message.includes('\n')) {
+        message.split('\n').forEach(line => originalError(line, stack, context));
+      } else {
+        originalError(message, stack, context);
+      }
     };
     // Warn method
     const originalWarn = this.warn.bind(this);
     this.warn = function (message, context) {
-      message.split('\n').forEach(line => originalWarn(line, context));
+      if (typeof message === 'string' && message.includes('\n')) {
+        message.split('\n').forEach(line => originalWarn(line, context));
+      } else {
+        originalWarn(message, context);
+      }
     };
   }
 
