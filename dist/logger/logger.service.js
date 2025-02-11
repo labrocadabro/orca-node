@@ -27,39 +27,25 @@ let LoggerService = class LoggerService extends common_1.ConsoleLogger {
     this.errorHandler = null;
     this.warnHandler = null;
     this.logHandler = null;
-    this.setupFormatters();
   }
-  setupFormatters() {
-    const _this = this;
-    // Log method
-    const originalLog = this.log.bind(this);
-    this.log = function (message, context) {
-      if (typeof message === 'string' && message.includes('\n')) {
-        message.split('\n').forEach(line => originalLog(line, context));
-      } else {
-        originalLog(message, context);
-      }
-    };
-    // Error method
-    const originalError = this.error.bind(this);
-    this.error = function (message, stack, context) {
-      if (typeof message === 'string' && message.includes('\n')) {
-        message.split('\n').forEach(line => originalError(line, stack, context));
-      } else {
-        originalError(message, stack, context);
-      }
-    };
-    // Warn method
-    const originalWarn = this.warn.bind(this);
-    this.warn = function (message, context) {
-      if (typeof message === 'string' && message.includes('\n')) {
-        message.split('\n').forEach(line => originalWarn(line, context));
-      } else {
-        originalWarn(message, context);
-      }
-    };
+  log(message) {
+    if (this.logHandler != null) {
+      this.logHandler(message);
+    }
+    super.log(message);
   }
-
+  error(message, stack, context) {
+    if (this.errorHandler != null) {
+      this.errorHandler(message, stack, context);
+    }
+    super.error(message, stack, context);
+  }
+  warn(message, context, ...rest) {
+    if (this.warnHandler != null) {
+      this.warnHandler(message, context, ...rest);
+    }
+    super.warn(message, context, ...rest);
+  }
   setLogHandler(fn) {
     this.logHandler = fn;
   }
