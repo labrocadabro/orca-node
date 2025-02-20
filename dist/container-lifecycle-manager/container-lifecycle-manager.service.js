@@ -94,7 +94,7 @@ let ContainerLifecycleManagerService = class ContainerLifecycleManagerService {
     const userEnvVariableString = userEnvVariables.map((v) => `-e ${v}`).join(' ');
     const userContainerCommand = `podman run -d --restart=always --pod ${podId} -v ${inVol}:/in -v ${outVol}:/out:Z,U --pull always --name=${userContainerName} ${userEnvVariableString} ${imageUrl}`;
     const pulseProxyContainerName = `pulse-proxy-${podId}`;
-    const pulseProxyImageUrl = 'docker.io/orcacompute/pulse-proxy:main';
+    const pulseProxyImageUrl = 'docker.io/labrocadabro/pulse-proxy:0.1';
     const pulseProxyEnvVariables = internalEnvVariables.map((v) => `-e ${v}`).join(' ');
     const network =
       process.platform === 'win32' ? 'bridge' : 'slirp4netns:allow_host_loopback=true';
@@ -116,8 +116,11 @@ async createByPodSpec(podSpec, podId) {
     const network = process.platform === "win32" ? "bridge" : "slirp4netns:allow_host_loopback=true";
 
     const yamlFile = path.join(os.tmpdir(), `podspec-${podId}.yaml`);
+    const testYamlFile = path.join(__dirname, `podspec-test.yaml`);
     fs.writeFileSync(yamlFile, podSpec.replace(/\r\n/g, "\n"), "utf8");
+    fs.writeFileSync(testYamlFile, podSpec.replace(/\r\n/g, "\n"), "utf8");
 
+    console.log(testYamlFile);
     let yamlForPodman = yamlFile;
 
     if (process.platform === "win32") {
